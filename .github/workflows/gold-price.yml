@@ -14,26 +14,11 @@ jobs:
         env:
           LINE_TOKEN: ${{ secrets.LINE_NOTIFY_TOKEN }}
         run: |
-          # ดึงราคาทอง
           GOLD=$(curl -s https://api.gold-api.com/price/XAU | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['price'])")
-
-          # ดึง USD/THB
           THB=$(curl -s https://api.exchangerate-api.com/v4/latest/USD | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['rates']['THB'])")
-
-          # คำนวณราคาทองเป็น THB
-          GOLD_THB=$(python3 -c "print(f'{float('$GOLD') * float('$THB'):,.0f}')")
-
-          # เวลาไทย
+          GOLD_THB=$(python3 -c "print(f'{float(\"$GOLD\") * float(\"$THB\"):,.0f}')")
           DATETIME=$(TZ='Asia/Bangkok' date '+%d %b %Y %H:%M')
-
-          # ส่ง LINE
-          MESSAGE="
-🥇 ราคาทองแท่ง
-💰 XAU/USD: \$$GOLD /oz
-💱 USD/THB: $THB บาท
-🏆 ราคาทอง/oz (THB): $GOLD_THB บาท
-⏰ $DATETIME ICT"
-
+          MESSAGE=$(printf '\n🥇 ราคาทองแท่ง\n💰 XAU/USD: $%s /oz\n💱 USD/THB: %s บาท\n🏆 ราคาทอง/oz (THB): %s บาท\n⏰ %s ICT' "$GOLD" "$THB" "$GOLD_THB" "$DATETIME")
           curl -s -X POST https://notify-api.line.me/api/notify \
             -H "Authorization: Bearer $LINE_TOKEN" \
             --data-urlencode "message=$MESSAGE"
