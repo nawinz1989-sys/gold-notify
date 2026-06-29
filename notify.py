@@ -119,6 +119,12 @@ mins = now.hour * 60 + now.minute
 slot_min, profile = min(SLOTS, key=lambda s: abs(mins - s[0]))
 slot_str = f"{slot_min // 60:02d}:{slot_min % 60:02d}"
 
+# ทดสอบ: บังคับโปรไฟล์จากปุ่ม Run workflow (A/B/C) ทับเวลาอัตโนมัติ
+override = os.environ.get("PROFILE", "auto").strip().upper()
+if override in ("A", "B", "C"):
+    profile = override
+    slot_str = f"{slot_str} (ทดสอบ {profile})"
+
 header = f"📊 สรุปราคา | {slot_str} ICT\n{now.strftime('%d %b %Y')}\n"
 
 extra = []

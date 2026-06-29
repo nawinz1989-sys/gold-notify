@@ -9,6 +9,13 @@ on:
     - cron: '40 13 * * *'  # 20:40 ICT
     - cron: '10 16 * * *'  # 23:10 ICT
   workflow_dispatch:       # รันมือได้
+    inputs:
+      profile:
+        description: 'ทดสอบโปรไฟล์ (auto=ตามเวลา, A=หุ้นสหรัฐ, B=พื้นฐาน, C=หุ้นไทย)'
+        required: false
+        default: 'auto'
+        type: choice
+        options: ['auto', 'A', 'B', 'C']
 
 jobs:
   notify:
@@ -19,4 +26,5 @@ jobs:
         env:
           LINE_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+          PROFILE: ${{ github.event.inputs.profile }}
         run: python3 notify.py
