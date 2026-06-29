@@ -10,15 +10,9 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch Gold Price & Send LINE
+      - uses: actions/checkout@v4
+      - name: Send gold price to LINE
         env:
-          LINE_TOKEN: ${{ secrets.LINE_NOTIFY_TOKEN }}
-        run: |
-          GOLD=$(curl -s https://api.gold-api.com/price/XAU | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['price'])")
-          THB=$(curl -s https://api.exchangerate-api.com/v4/latest/USD | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['rates']['THB'])")
-          GOLD_THB=$(python3 -c "print(f'{float(\"$GOLD\") * float(\"$THB\"):,.0f}')")
-          DATETIME=$(TZ='Asia/Bangkok' date '+%d %b %Y %H:%M')
-          MESSAGE=$(printf '\n🥇 ราคาทองแท่ง\n💰 XAU/USD: $%s /oz\n💱 USD/THB: %s บาท\n🏆 ราคาทอง/oz (THB): %s บาท\n⏰ %s ICT' "$GOLD" "$THB" "$GOLD_THB" "$DATETIME")
-          curl -s -X POST https://notify-api.line.me/api/notify \
-            -H "Authorization: Bearer $LINE_TOKEN" \
-            --data-urlencode "message=$MESSAGE"
+          LINE_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+        run: python3 notify.py
