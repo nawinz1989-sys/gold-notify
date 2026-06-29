@@ -171,7 +171,11 @@ elif profile == "C":
 
 body = header + "\n" + "\n".join(extra + lines_common)
 body += note
-body += f"\n\n🕐 ส่งจริง {now.strftime('%H:%M')}"
+
+# รอบส่งถัดไป (เวลาไทย) — ตัวแรกที่เลยจากตอนนี้ ไม่งั้นวนไปรอบแรกของวันพรุ่งนี้
+slot_times = sorted(s[0] for s in SLOTS)
+next_min = next((m for m in slot_times if m > mins), slot_times[0])
+body += f"\n\n⏭️ รอบต่อไป {next_min // 60:02d}:{next_min % 60:02d} น."
 
 # ---------- ส่ง LINE ----------
 token = os.environ["LINE_TOKEN"]
