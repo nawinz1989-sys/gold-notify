@@ -1,8 +1,13 @@
 import json
 import os
+import time
 import urllib.request
 import datetime
 from zoneinfo import ZoneInfo
+
+RETRIES = 3            # ลองดึงซ้ำกี่ครั้งถ้าพลาด
+RETRY_WAIT = 2         # หน่วงกี่วินาทีก่อนลองใหม่
+MAX_ABS_CHG = 35.0     # %เปลี่ยนแปลงเกินนี้ = น่าจะข้อมูลเพี้ยน ไม่ส่ง
 
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 
@@ -21,8 +26,7 @@ def fetch_json(url, headers=None):
         return json.load(r)
 
 
-def yahoo(symbol):
-    """คืนค่า (ราคาปัจจุบัน, %เปลี่ยนแปลง) จาก Yahoo Finance"""
+def _yahoo_once(symbol):
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
     d = fetch_json(url)
     meta = d["chart"]["result"][0]["meta"]
@@ -30,6 +34,26 @@ def yahoo(symbol):
     prev = meta.get("chartPreviousClose") or meta.get("previousClose")
     chg = (price - prev) / prev * 100 if prev else 0.0
     return float(price), float(chg)
+
+
+def yahoo(symbol):
+    """คืนค่า (ราคาปัจจุบัน, %เปลี่ยนแปลง) — ลองซ้ำถ้าพลาด + กรองค่าเพี้ยน"""
+    last_err = None
+    for attempt in range(1, RETRIES + 1):
+        try:
+            price, chg = _yahoo_once(symbol)
+            # กันราคาเพี้ยน: ต้อง > 0 และ %เปลี่ยนแปลงไม่สุดโต่งผิดปกติ
+            if price <= 0:
+                raise ValueError(f"ราคาผิดปกติ ({price})")
+            if abs(chg) > MAX_ABS_CHG:
+                raise ValueError(f"%เปลี่ยนแปลงเพี้ยน ({chg:+.1f}%)")
+            return price, chg
+        except Exception as e:
+            last_err = e
+            print(f"RETRY {symbol} ({attempt}/{RETRIES}):", e)
+            if attempt < RETRIES:
+                time.sleep(RETRY_WAIT)
+    raise last_err
 
 
 def arrow(chg):
