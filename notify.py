@@ -2,6 +2,7 @@ import json
 import os
 import urllib.request
 import datetime
+from zoneinfo import ZoneInfo
 
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 
@@ -66,24 +67,24 @@ if usdthb:
 else:
     lines_common.append(fmt("USD/THB", None, 0))
 
-# ทอง: USD/oz + THB/บาททอง
+# ทอง: USD/oz (บรรทัดบน) + THB/บาททอง (บรรทัดล่าง)
 if gold:
     gold_usd, gold_chg = gold
-    g = f"${gold_usd:,.0f}/oz"
+    g = f"{arrow(gold_chg)} ทอง: ${gold_usd:,.0f}/oz ({gold_chg:+.2f}%)"
     if rate:
         thb_baht = gold_usd / OZ_TO_GRAM * BAHT_GOLD_GRAM * THAI_PURITY * rate
-        g += f" | ฿{thb_baht:,.0f}/บาท"
-    lines_common.append(fmt("ทอง", g, gold_chg))
+        g += f"\n      ฿{thb_baht:,.0f}/บาท"
+    lines_common.append(g)
 else:
     lines_common.append(fmt("ทอง", None, 0))
 
-# BTC: USD + THB
+# BTC: USD (บรรทัดบน) + THB (บรรทัดล่าง)
 if btc:
     btc_usd, btc_chg = btc
-    b = f"${btc_usd:,.0f}"
+    b = f"{arrow(btc_chg)} BTC: ${btc_usd:,.0f} ({btc_chg:+.2f}%)"
     if rate:
-        b += f" | ฿{btc_usd * rate:,.0f}"
-    lines_common.append(fmt("BTC", b, btc_chg))
+        b += f"\n      ฿{btc_usd * rate:,.0f}"
+    lines_common.append(b)
 else:
     lines_common.append(fmt("BTC", None, 0))
 
@@ -127,13 +128,25 @@ if override in ("A", "B", "C"):
 
 header = f"📊 สรุปราคา | {slot_str} ICT\n{now.strftime('%d %b %Y')}\n"
 
+# เช็ควันทำการแยกแต่ละตลาด (จันทร์-ศุกร์ ตามเวลาท้องถิ่นของตลาดนั้น)
+us_open_day = datetime.datetime.now(ZoneInfo("America/New_York")).weekday() < 5
+th_open_day = datetime.datetime.now(ZoneInfo("Asia/Bangkok")).weekday() < 5
+
 extra = []
+note = ""
 if profile == "A":
-    extra = stock_lines(US)
+    if us_open_day:
+        extra = stock_lines(US)
+    else:
+        note = "\n(สุดสัปดาห์ — ตลาดสหรัฐปิด ไม่มีราคาหุ้น/ดัชนี)"
 elif profile == "C":
-    extra = stock_lines(TH)
+    if th_open_day:
+        extra = stock_lines(TH)
+    else:
+        note = "\n(สุดสัปดาห์ — ตลาดไทยปิด ไม่มีราคาหุ้น/ดัชนี)"
 
 body = header + "\n" + "\n".join(extra + lines_common)
+body += note
 body += f"\n\n🕐 ส่งจริง {now.strftime('%H:%M')}"
 
 # ---------- ส่ง LINE ----------
