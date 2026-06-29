@@ -2,8 +2,12 @@ name: Gold Price LINE Notify
 
 on:
   schedule:
-    - cron: '0 5 * * *'   # 12:00 Bangkok (UTC+7)
-    - cron: '0 17 * * *'  # 00:00 Bangkok (UTC+7)
+    - cron: '10 21 * * *'  # 04:10 ICT
+    - cron: '40 2 * * *'   # 09:40 ICT
+    - cron: '40 5 * * *'   # 12:40 ICT
+    - cron: '40 9 * * *'   # 16:40 ICT
+    - cron: '40 13 * * *'  # 20:40 ICT
+    - cron: '10 16 * * *'  # 23:10 ICT
   workflow_dispatch:       # รันมือได้
 
 jobs:
@@ -11,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Send gold price to LINE
+      - name: Send prices to LINE
         env:
           LINE_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
