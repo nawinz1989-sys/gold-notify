@@ -141,7 +141,11 @@ SLOTS = [
 
 now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=7)))
 mins = now.hour * 60 + now.minute
-slot_min, profile = min(SLOTS, key=lambda s: abs(mins - s[0]))
+
+# "รอบนี้" = สลอตล่าสุดที่ผ่านมาแล้ว (cron ยิงตรงเวลาหรือช้ากว่าเสมอ ไม่มีทางก่อนเวลา)
+# ถ้ายังไม่ถึงรอบแรกของวัน (ก่อน 04:10) ให้ถือเป็นรอบสุดท้ายของเมื่อวาน (23:10)
+passed = [s for s in SLOTS if s[0] <= mins]
+slot_min, profile = max(passed or SLOTS, key=lambda s: s[0])
 slot_str = f"{slot_min // 60:02d}:{slot_min % 60:02d}"
 
 # ทดสอบ: บังคับโปรไฟล์จากปุ่ม Run workflow (A/B/C) ทับเวลาอัตโนมัติ
@@ -172,7 +176,7 @@ elif profile == "C":
 body = header + "\n" + "\n".join(extra + lines_common)
 body += note
 
-# รอบส่งถัดไป (เวลาไทย) — ตัวแรกที่เลยจากตอนนี้ ไม่งั้นวนไปรอบแรกของวันพรุ่งนี้
+# รอบส่งถัดไป (เวลาไทย) — สลอตแรกที่ยังไม่ถึง ไม่งั้นวนไปรอบแรกของวันพรุ่งนี้
 slot_times = sorted(s[0] for s in SLOTS)
 next_min = next((m for m in slot_times if m > mins), slot_times[0])
 body += f"\n\n⏭️ รอบต่อไป {next_min // 60:02d}:{next_min % 60:02d} น."
